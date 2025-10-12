@@ -1,2 +1,3 @@
 *.DS_Store
 .DS_Store
+self_driving_car_coco/export/*.jpg
