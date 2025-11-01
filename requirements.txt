@@ -7,3 +7,5 @@ supervision
 torch
 torchvision
 matplotlib
+seaborn
+tensorboard
