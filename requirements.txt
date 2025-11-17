@@ -1,0 +1,11 @@
+matplotlib
+numpy
+opencv-python
+pillow
+rfdetr
+supervision
+torch
+torchvision
+matplotlib
+seaborn
+tensorboard
