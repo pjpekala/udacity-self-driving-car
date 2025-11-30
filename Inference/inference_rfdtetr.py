@@ -8,15 +8,16 @@ import os
 import numpy as np
 
 
-MODEL_WEIGHTS = "checkpoint_best_total.pth"
+MODEL_WEIGHTS = "../v2/checkpoint_best_total.pth"
 IMAGES_DIR = "inference_subset/images"
 ANNOTATIONS = "inference_subset/filtered_annotations.coco.json"
-CSV_PATH = "inference_metrics_rfdetr.csv"
+CSV_PATH = "inference_metrics_rfdetr2-optimized-conf.csv"
 SCORE_THR = 0.001
 IOU_MATCH_THR = 0.5
 
 
 model = RFDETRNano(pretrain_weights=MODEL_WEIGHTS)
+model.optimize_for_inference()
 
 
 val_ds = sv.DetectionDataset.from_coco(
@@ -34,7 +35,10 @@ with open(CSV_PATH, "w", newline="") as f:
         "matched_detections",
         "precision",
         "recall",
-        "mean_iou"
+        "mean_iou",
+        "mean_confidence",
+        "max_confidence",
+        "min_confidence"
     ])
     writer.writeheader()
 
@@ -126,11 +130,17 @@ for path, image, gt_ann in tqdm(val_ds):
     recall = matched / num_gt if num_gt > 0 else 0.0
     mean_iou = float(np.mean(ious)) if len(ious) > 0 else 0.0
 
+    # Confidence stats
+    mean_confidence = float(np.mean(pred_scores)) if num_pred > 0 else 0.0
+    max_confidence  = float(np.max(pred_scores))  if num_pred > 0 else 0.0
+    min_confidence  = float(np.min(pred_scores))  if num_pred > 0 else 0.0
+
     # WRITE METRICS
     with open(CSV_PATH, "a", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=[
             "image","inference_time_ms","num_predictions","num_labels",
-            "matched_detections","precision","recall","mean_iou"
+            "matched_detections","precision","recall","mean_iou",
+            "mean_confidence","max_confidence","min_confidence"
         ])
         writer.writerow({
             "image": img_name,
@@ -140,7 +150,10 @@ for path, image, gt_ann in tqdm(val_ds):
             "matched_detections": matched,
             "precision": round(precision, 4),
             "recall": round(recall, 4),
-            "mean_iou": round(mean_iou, 4)
+            "mean_iou": round(mean_iou, 4),
+            "mean_confidence": round(mean_confidence, 4),
+            "max_confidence": round(max_confidence, 4),
+            "min_confidence": round(min_confidence, 4),
         })
 
 print("Inference complete.")
