@@ -11,7 +11,7 @@ import numpy as np
 MODEL_WEIGHTS = "../v2/checkpoint_best_total.pth"
 IMAGES_DIR = "inference_subset/images"
 ANNOTATIONS = "inference_subset/filtered_annotations.coco.json"
-CSV_PATH = "inference_metrics_rfdetr2-optimized-conf.csv"
+CSV_PATH = "inference_metrics_rfdetr2.csv"
 SCORE_THR = 0.001
 IOU_MATCH_THR = 0.5
 

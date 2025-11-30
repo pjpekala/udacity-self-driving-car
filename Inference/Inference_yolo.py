@@ -32,7 +32,7 @@ label_dir  = "inference_subset/labels"
 
 model = YOLO(model_path)
 
-csv_file = "inference_metrics_yolo.csv"
+csv_file = "inference_metrics_yolo2.csv"
 csv_cols = [
     "image",
     "inference_time_ms",

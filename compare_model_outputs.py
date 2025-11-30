@@ -12,17 +12,20 @@ sns.set(style="whitegrid")
 def load_metrics(path):
     df = pd.read_csv(path)
     # make sure numeric types are correct
-    for c in ["inference_time_ms", "num_predictions", "num_labels",
-              "matched_detections", "precision", "recall",
-              "mean_iou", "mean_confidence", "max_confidence", "min_confidence"]:
+    numeric_cols = [
+        "inference_time_ms", "num_predictions", "num_labels",
+        "matched_detections", "precision", "recall",
+        "mean_iou", "mean_confidence", "max_confidence", "min_confidence",
+    ]
+    for c in numeric_cols:
         if c in df.columns:
             df[c] = pd.to_numeric(df[c], errors="coerce")
 
-    for c in ["inference_time_ms", "num_predictions", "num_labels",
-              "matched_detections", "precision", "recall",
-              "mean_iou", "mean_confidence", "max_confidence", "min_confidence"]:
-        if c in df.columns:
-            df[c] = pd.to_numeric(df[c], errors="coerce")
+    # normalize the image/id column to string so merges won't fail when dtypes differ
+    if "image" in df.columns:
+        # coerce to str, strip whitespace, and use the filename stem (remove path and extension)
+        df["image"] = df["image"].astype(str).str.strip().apply(lambda p: Path(p).stem)
+
     return df
 
 
@@ -83,6 +86,19 @@ def plot_pairwise(dfA, dfB, labelA, labelB, outdir):
     merged = pd.merge(dfA, dfB, on="image", suffixes=("_A", "_B"))
     os.makedirs(outdir, exist_ok=True)
     print(f"\nPaired images: {len(merged)} (matched on image column)")
+
+    # if there are no paired images, avoid running numeric reductions on empty arrays
+    if merged.empty:
+        print("No paired images found — skipping pairwise plots and stats.")
+        # show small diagnostic samples to help understand why there are no matches
+        sample_a = dfA["image"].dropna().astype(str).head(10).tolist() if "image" in dfA.columns else []
+        sample_b = dfB["image"].dropna().astype(str).head(10).tolist() if "image" in dfB.columns else []
+        print("Sample image IDs from A:", sample_a)
+        print("Sample image IDs from B:", sample_b)
+        # still write an empty merged CSV and an empty stats summary for consistency
+        merged.to_csv(os.path.join(outdir, "merged_per_image.csv"), index=False)
+        pd.DataFrame().to_csv(os.path.join(outdir, "paired_stats_summary.csv"))
+        return
 
     compare_metrics = [
         ("inference_time_ms", True),
